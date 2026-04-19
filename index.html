@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="SCUBA BIRD PROTOCOL — Real-time gesture recognition engine powered by MediaPipe">
+  <title>🐦 Scuba Bird Protocol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       INITIALIZATION SPLASH
+       ═══════════════════════════════════════════════════════ -->
+  <div id="splash-screen">
+    <div class="splash-content">
+      <div class="splash-icon">🤿🐦</div>
+      <h1 class="splash-title">SCUBA BIRD</h1>
+      <p class="splash-subtitle">PROTOCOL ENGINE v2.0</p>
+      <div class="splash-status" id="splash-status">Awaiting initialization…</div>
+
+      <!-- Camera Selector -->
+      <div class="cam-selector-wrap" id="cam-selector-wrap" style="display:none">
+        <label class="cam-label" for="cam-select">📷 SELECT CAMERA</label>
+        <select id="cam-select" class="cam-select"></select>
+      </div>
+
+      <button id="btn-activate" class="btn-activate" disabled>
+        <span class="btn-pulse"></span>
+        <span class="btn-text">ACTIVATE CAMERA</span>
+      </button>
+      <div class="splash-checklist" id="splash-checklist">
+        <div class="check-item" id="check-gif">
+          <span class="check-icon">⏳</span>
+          <span>GIF_ASSET: src/scuba.gif</span>
+        </div>
+        <div class="check-item" id="check-audio">
+          <span class="check-icon">⏳</span>
+          <span>AUDIO_ASSET: src/music/lagu_kicau_mania.mp3</span>
+        </div>
+        <div class="check-item" id="check-pose">
+          <span class="check-icon">⏳</span>
+          <span>MediaPipe PoseLandmarker</span>
+        </div>
+        <div class="check-item" id="check-hand">
+          <span class="check-icon">⏳</span>
+          <span>MediaPipe HandLandmarker</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       MAIN VIEWPORT
+       ═══════════════════════════════════════════════════════ -->
+  <div id="viewport" class="viewport hidden">
+
+    <!-- Camera Switch button (top-left) -->
+    <button id="btn-switch-cam" class="btn-switch-cam" title="Switch Camera">
+      🎥 Switch Cam
+    </button>
+
+    <!-- Video + Canvas Stack -->
+    <div class="video-container" id="video-container">
+      <video id="webcam" autoplay playsinline muted></video>
+      <canvas id="overlay-canvas"></canvas>
+
+      <!-- GIF Overlay (hidden until triggered) -->
+      <div id="gif-overlay" class="gif-overlay hidden">
+        <img id="gif-image" src="src/scuba.gif" alt="Scuba Bird GIF">
+      </div>
+
+      <!-- Cooldown bar -->
+      <div id="cooldown-bar" class="cooldown-bar hidden">
+        <div class="cooldown-fill" id="cooldown-fill"></div>
+      </div>
+    </div>
+
+    <!-- Audio Element (preloaded, not visible) -->
+    <audio id="audio-player" preload="auto" src="src/music/lagu_kicau_mania.mp3"></audio>
+
+    <!-- ═══════════════════════════════════════════════════════
+         DIAGNOSTIC HUD (Dev Panel)
+         ═══════════════════════════════════════════════════════ -->
+    <div id="hud" class="hud">
+      <div class="hud-title">STATE ENGINE</div>
+
+      <div class="hud-section">
+        <div class="hud-label">LANDMARKS</div>
+        <div class="hud-value" id="hud-detect">—</div>
+      </div>
+      <div class="hud-section">
+        <div class="hud-label">AUDIO_SYS</div>
+        <div class="hud-value" id="hud-audio">UNINITIALIZED</div>
+      </div>
+
+      <div class="hud-divider"></div>
+
+      <div class="hud-section">
+        <div class="hud-label">SUB_A: R-Hand Wave</div>
+        <div class="hud-value" id="hud-a">FALSE</div>
+        <div class="hud-detail" id="hud-a-detail">rev: 0 | cont: 0/15</div>
+      </div>
+      <div class="hud-section">
+        <div class="hud-label">SUB_B: L-Hand → Face</div>
+        <div class="hud-value" id="hud-b">FALSE</div>
+        <div class="hud-detail" id="hud-b-detail">dist: — | cont: 0/15</div>
+      </div>
+      <div class="hud-section">
+        <div class="hud-label">SUB_C: Torso Sway</div>
+        <div class="hud-value" id="hud-c">FALSE</div>
+        <div class="hud-detail" id="hud-c-detail">auto from A</div>
+      </div>
+
+      <div class="hud-divider"></div>
+
+      <div class="hud-section">
+        <div class="hud-label">COOLDOWN</div>
+        <div class="hud-value" id="hud-cooldown">INACTIVE</div>
+      </div>
+      <div class="hud-section">
+        <div class="hud-label">TRIGGER</div>
+        <div class="hud-value hud-trigger" id="hud-trigger">IDLE</div>
+      </div>
+
+      <div class="hud-divider"></div>
+      <div class="hud-section">
+        <div class="hud-label">FPS</div>
+        <div class="hud-value" id="hud-fps">0</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
