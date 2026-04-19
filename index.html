@@ -37,6 +37,14 @@
           <span class="check-icon">⏳</span>
           <span>GIF_ASSET: src/scuba.gif</span>
         </div>
+        <div class="check-item" id="check-gif1">
+          <span class="check-icon">⏳</span>
+          <span>GIF1_ASSET: src/scuba1.gif</span>
+        </div>
+        <div class="check-item" id="check-gif2">
+          <span class="check-icon">⏳</span>
+          <span>GIF2_ASSET: src/scuba2.gif</span>
+        </div>
         <div class="check-item" id="check-audio">
           <span class="check-icon">⏳</span>
           <span>AUDIO_ASSET: src/music/lagu_kicau_mania.mp3</span>
@@ -69,9 +77,15 @@
         <video id="webcam" autoplay playsinline muted></video>
         <canvas id="overlay-canvas"></canvas>
 
-        <!-- GIF Overlay (hidden until triggered) -->
+        <!-- GIF Overlays -->
         <div id="gif-overlay" class="gif-overlay hidden">
           <img id="gif-image" src="src/scuba.gif" alt="Scuba Bird GIF">
+        </div>
+        <div id="gif-overlay-1" class="gif-overlay-small hidden">
+          <img id="gif-image-1" src="src/scuba1.gif" alt="Scuba 1">
+        </div>
+        <div id="gif-overlay-2" class="gif-overlay-small hidden">
+          <img id="gif-image-2" src="src/scuba2.gif" alt="Scuba 2">
         </div>
 
         <!-- Cooldown bar -->
@@ -79,6 +93,9 @@
           <div class="cooldown-fill" id="cooldown-fill"></div>
         </div>
       </div>
+
+      <!-- Audio Element (preloaded) -->
+      <audio id="audio-player" preload="auto" src="src/music/lagu_kicau_mania.mp3"></audio>
 
       <!-- ═══════════════════════════════════════════════════════
            DIAGNOSTIC HUD (Dev Panel)

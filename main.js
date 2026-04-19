@@ -28,6 +28,8 @@ import {
 // ─── ASSET MAP (STRICT) ─────────────────────────────────
 const ASSET_MAP = Object.freeze({
   GIF_ASSET:   "src/scuba.gif",
+  GIF1_ASSET:  "src/scuba1.gif",
+  GIF2_ASSET:  "src/scuba2.gif",
   AUDIO_ASSET: "src/music/lagu_kicau_mania.mp3"
 });
 
@@ -95,6 +97,8 @@ const DOM = {
   camWrap:      $("cam-selector-wrap"),
   camSelect:    $("cam-select"),
   checkGif:     $("check-gif"),
+  checkGif1:    $("check-gif1"),
+  checkGif2:    $("check-gif2"),
   checkAudio:   $("check-audio"),
   checkPose:    $("check-pose"),
   checkHand:    $("check-hand"),
@@ -105,6 +109,10 @@ const DOM = {
   canvas:       $("overlay-canvas"),
   gifOverlay:   $("gif-overlay"),
   gifImage:     $("gif-image"),
+  gifOverlay1:  $("gif-overlay-1"),
+  gifImage1:    $("gif-image-1"),
+  gifOverlay2:  $("gif-overlay-2"),
+  gifImage2:    $("gif-image-2"),
   audioPlayer:  $("audio-player"),
   cooldownBar:  $("cooldown-bar"),
   cooldownFill: $("cooldown-fill"),
@@ -139,8 +147,13 @@ async function initialize() {
   setSplashStatus("Verifying assets…");
 
   // 1) Asset checks
-  if (!await checkAsset(ASSET_MAP.GIF_ASSET,   DOM.checkGif))   return;
-  if (!await checkAsset(ASSET_MAP.AUDIO_ASSET, DOM.checkAudio)) return;
+  const assetsOk = await Promise.all([
+    checkAsset(ASSET_MAP.GIF_ASSET,   DOM.checkGif),
+    checkAsset(ASSET_MAP.GIF1_ASSET,  DOM.checkGif1),
+    checkAsset(ASSET_MAP.GIF2_ASSET,  DOM.checkGif2),
+    checkAsset(ASSET_MAP.AUDIO_ASSET, DOM.checkAudio)
+  ]);
+  if (assetsOk.includes(false)) return;
 
   // 2) Load MediaPipe
   setSplashStatus("Loading MediaPipe models…");
@@ -513,10 +526,12 @@ function evalC() {
 function fire() {
   console.log("[SCUBA_BIRD_PROTOCOL] 🔥 TRIGGER");
 
-  // GIF
-  DOM.gifOverlay.classList.remove("hidden");
-  DOM.gifImage.src = "";
-  DOM.gifImage.src = ASSET_MAP.GIF_ASSET;
+  // GIFs
+  [DOM.gifOverlay, DOM.gifOverlay1, DOM.gifOverlay2].forEach(el => el.classList.remove("hidden"));
+  
+  DOM.gifImage.src = "";  DOM.gifImage.src = ASSET_MAP.GIF_ASSET;
+  DOM.gifImage1.src = ""; DOM.gifImage1.src = ASSET_MAP.GIF1_ASSET;
+  DOM.gifImage2.src = ""; DOM.gifImage2.src = ASSET_MAP.GIF2_ASSET;
 
   // Audio — instant
   DOM.audioPlayer.currentTime = 0;
@@ -534,7 +549,7 @@ function fire() {
   STATE.cooldownTimer = setTimeout(() => {
     STATE.cooldown = false;
     STATE.cooldownTimer = null;
-    DOM.gifOverlay.classList.add("hidden");
+    [DOM.gifOverlay, DOM.gifOverlay1, DOM.gifOverlay2].forEach(el => el.classList.add("hidden"));
     DOM.audioPlayer.pause();
     DOM.audioPlayer.currentTime = 0;
     DOM.cooldownBar.classList.add("hidden");
