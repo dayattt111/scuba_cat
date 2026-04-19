@@ -31,6 +31,9 @@ const ASSET_MAP = Object.freeze({
   AUDIO_ASSET: "src/music/lagu_kicau_mania.mp3"
 });
 
+// Face landmark indices for facial region detection
+const FACE_LM_IDX = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
 // ─── CONFIGURATION ──────────────────────────────────────
 const CONFIG = Object.freeze({
   // Sub-A: how many direction reversals in the time window
@@ -38,9 +41,8 @@ const CONFIG = Object.freeze({
   OSC_MIN_REVERSALS:         2,   // need ≥2 reversals ("wave")
   OSC_NOISE_THRESHOLD:   0.001,   // ignore dx < this (normalized)
 
-  // Sub-B: left-hand to face proximity
-  // 0.20 = very generous ~20% of frame width/height
-  FACE_PROXIMITY:         0.20,
+  // Sub-B: left-hand to NOSE proximity (2D only, Z is noisy)
+  NOSE_PROXIMITY:         0.15,   // normalized 2D distance to nose
 
   // Continuity: how many consecutive frames each routine must be
   // TRUE before locking in
@@ -51,7 +53,7 @@ const CONFIG = Object.freeze({
   C_AUTO_FRAMES:             8,
 
   // Timing
-  COOLDOWN_MS:            5000,
+  COOLDOWN_MS:            8000,   // GIF + audio stays for 8 seconds
   MIN_FRAME_GAP_MS:         20,   // ~50 FPS cap; prevents MediaPipe stutter
 
   AUDIO_VOLUME:            1.0,
@@ -438,61 +440,36 @@ function evalA(rHand, now) {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  SUB-ROUTINE B — Left Hand near Face
-//  Uses a BOUNDING BOX around the face landmarks (nose, eyes,
-//  ears, mouth corners) so ANY part of the hand entering the
-//  face region counts — not just touching the exact nose point.
+//  SUB-ROUTINE B — Left Hand near NOSE
+//  Specifically checks whether the LEFT hand (wrist, index tip,
+//  middle tip, palm base) comes close to the NOSE landmark.
+//  Uses 2D XY distance only — Z is unreliable in normalized space.
+//  Right hand is NOT used here; only the left triggers Sub-B.
 // ═══════════════════════════════════════════════════════════
 
-// Pose landmark indices forming the "face zone"
-const FACE_LM_IDX = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // nose + eyes + ears + mouth
-
 function evalB(lHand, poseLMs, handData) {
-  // If left hand not detected but right hand is, try right as fallback
-  // (some poses block left-hand detection)
-  const hand = lHand ?? handData.right;
-
-  if (!hand || !poseLMs) {
+  // Sub-B is STRICTLY left hand only — no fallback to right
+  if (!lHand || !poseLMs) {
     STATE.contB = Math.max(0, STATE.contB - CONFIG.DECAY_RATE);
     if (STATE.contB === 0) STATE.B = false;
     STATE.diagB = { dist: null };
     return;
   }
 
-  // Build face bounding box from pose face landmarks
-  let xMin = Infinity, xMax = -Infinity;
-  let yMin = Infinity, yMax = -Infinity;
-  for (const idx of FACE_LM_IDX) {
-    const lm = poseLMs[idx];
-    if (!lm) continue;
-    if (lm.x < xMin) xMin = lm.x;
-    if (lm.x > xMax) xMax = lm.x;
-    if (lm.y < yMin) yMin = lm.y;
-    if (lm.y > yMax) yMax = lm.y;
-  }
+  // Nose = pose landmark 0
+  const nose = poseLMs[0];
 
-  // Expand bounding box by FACE_PROXIMITY on each side
-  const pad = CONFIG.FACE_PROXIMITY;
-  xMin -= pad; xMax += pad;
-  yMin -= pad; yMax += pad;
-
-  // Check if ANY of the left-hand landmarks is inside the face box
-  const keyPts = [hand[0], hand[4], hand[8], hand[12], hand[16], hand[20]]; // wrist + fingertips
+  // Check wrist, index tip (8), middle tip (12), palm base (5)
+  const keyPts = [lHand[0], lHand[8], lHand[12], lHand[5]];
   let minDist = Infinity;
-  let inside = false;
-
   for (const pt of keyPts) {
     if (!pt) continue;
-    const inBox = pt.x >= xMin && pt.x <= xMax && pt.y >= yMin && pt.y <= yMax;
-    if (inBox) { inside = true; }
-    // Also compute distance to face center for HUD display
-    const cx = (xMin + xMax) / 2, cy = (yMin + yMax) / 2;
-    const d = Math.sqrt((pt.x - cx) ** 2 + (pt.y - cy) ** 2);
+    const d = Math.sqrt((pt.x - nose.x) ** 2 + (pt.y - nose.y) ** 2);
     if (d < minDist) minDist = d;
   }
 
-  const instant = inside || minDist < CONFIG.FACE_PROXIMITY;
-  STATE.diagB = { dist: minDist, inside };
+  const instant = minDist < CONFIG.NOSE_PROXIMITY;
+  STATE.diagB = { dist: minDist, inside: instant };
 
   if (instant) {
     STATE.contB = Math.min(STATE.contB + 1, CONFIG.CONTINUITY_NEEDED + 5);
@@ -608,7 +585,7 @@ function renderLandmarks(pR, hR, poseLMs) {
       if (lm.y < yMin) yMin = lm.y;
       if (lm.y > yMax) yMax = lm.y;
     }
-    const pad = CONFIG.FACE_PROXIMITY;
+    const pad = CONFIG.NOSE_PROXIMITY;
     const W = DOM.canvas.width, H = DOM.canvas.height;
     ctx.save();
     ctx.strokeStyle = STATE.B ? "rgba(0,255,136,0.7)" : "rgba(255,184,77,0.5)";

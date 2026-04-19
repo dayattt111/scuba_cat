@@ -340,10 +340,14 @@ html, body {
 /* ── GIF Overlay ──────────────────────────────────────── */
 .gif-overlay {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 55%;                /* occupy left ~55% of the frame */
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-left: 5%;
   z-index: 20;
   pointer-events: none;
   animation: gifPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -355,8 +359,8 @@ html, body {
 }
 
 .gif-overlay img {
-  max-width: 65%;
-  max-height: 65%;
+  max-width: 80%;
+  max-height: 80%;
   border-radius: var(--radius-md);
   filter: drop-shadow(0 0 40px rgba(0, 212, 255, 0.4));
 }
@@ -377,7 +381,7 @@ html, body {
   width: 100%;
   background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
   transform-origin: left;
-  animation: cooldownShrink 5s linear forwards;
+  animation: cooldownShrink 8s linear forwards;
 }
 
 @keyframes cooldownShrink {
