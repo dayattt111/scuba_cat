@@ -53,7 +53,7 @@ const CONFIG = Object.freeze({
   C_AUTO_FRAMES:             8,
 
   // Timing
-  COOLDOWN_MS:            8000,   // GIF + audio stays for 8 seconds
+  COOLDOWN_MS:            10000,   // GIF + audio stays for 8 seconds
   MIN_FRAME_GAP_MS:         20,   // ~50 FPS cap; prevents MediaPipe stutter
 
   AUDIO_VOLUME:            1.0,
@@ -113,8 +113,10 @@ const DOM = {
   hudAudio:     $("hud-audio"),
   hudA:         $("hud-a"),
   hudAd:        $("hud-a-detail"),
+  hudABar:      $("hud-a-bar"),
   hudB:         $("hud-b"),
   hudBd:        $("hud-b-detail"),
+  hudBBar:      $("hud-b-bar"),
   hudC:         $("hud-c"),
   hudCd:        $("hud-c-detail"),
   hudCooldown:  $("hud-cooldown"),
@@ -147,31 +149,36 @@ async function initialize() {
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm"
     );
 
-    pose = await PoseLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-        delegate: "GPU"
-      },
-      runningMode: "VIDEO",
-      numPoses: 1,
-      minPoseDetectionConfidence: 0.4,
-      minPosePresenceConfidence:  0.4,
-      minTrackingConfidence:      0.4,
-    });
-    markCheck(DOM.checkPose, true);
+    [pose, hands] = await Promise.all([
+      PoseLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+          delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numPoses: 1,
+        minPoseDetectionConfidence: 0.4,
+        minPosePresenceConfidence:  0.4,
+        minTrackingConfidence:      0.4,
+      }),
+      HandLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+          delegate: "GPU"
+        },
+        runningMode:  "VIDEO",
+        numHands:      2,
+        minHandDetectionConfidence: 0.4,
+        minHandPresenceConfidence:  0.4,
+        minTrackingConfidence:      0.4,
+      })
+    ]);
 
-    hands = await HandLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-        delegate: "GPU"
-      },
-      runningMode:  "VIDEO",
-      numHands:      2,
-      minHandDetectionConfidence: 0.4,
-      minHandPresenceConfidence:  0.4,
-      minTrackingConfidence:      0.4,
-    });
+    markCheck(DOM.checkPose, true);
     markCheck(DOM.checkHand, true);
+    setSplashStatus("Ready for activation.", "ready");
+    DOM.btnActivate.disabled = false;
+    await populateCameraList();
 
   } catch (e) {
     markCheck(DOM.checkPose, false);
@@ -544,59 +551,56 @@ function fire() {
 // ═══════════════════════════════════════════════════════════
 
 function renderLandmarks(pR, hR, poseLMs) {
-  // Pose
+  // Pose - Indigo
   if (pR.landmarks) {
     for (const lms of pR.landmarks) {
       drawing.drawLandmarks(lms, {
         radius: 3,
-        color: "rgba(0,212,255,0.75)",
-        fillColor: "rgba(0,212,255,0.25)"
+        color: "#6366f1",
+        fillColor: "rgba(99, 102, 241, 0.2)"
       });
       drawing.drawConnectors(lms, PoseLandmarker.POSE_CONNECTIONS, {
-        color: "rgba(0,212,255,0.3)",
+        color: "rgba(99, 102, 241, 0.3)",
         lineWidth: 1.5
       });
     }
   }
 
-  // Hands
+  // Hands - Emerald
   if (hR.landmarks) {
     for (const lms of hR.landmarks) {
       drawing.drawLandmarks(lms, {
         radius: 3,
-        color: "rgba(0,255,136,0.85)",
-        fillColor: "rgba(0,255,136,0.35)"
+        color: "#10b981",
+        fillColor: "rgba(16, 185, 129, 0.2)"
       });
       drawing.drawConnectors(lms, HandLandmarker.HAND_CONNECTIONS, {
-        color: "rgba(0,255,136,0.4)",
+        color: "rgba(16, 185, 129, 0.3)",
         lineWidth: 1.8
       });
     }
   }
 
-  // Face bounding-box visualisation (when pose detected)
+  // Target Zone visualisation (Nose proximity)
   if (poseLMs) {
-    let xMin = Infinity, xMax = -Infinity;
-    let yMin = Infinity, yMax = -Infinity;
-    for (const idx of FACE_LM_IDX) {
-      const lm = poseLMs[idx]; if (!lm) continue;
-      if (lm.x < xMin) xMin = lm.x;
-      if (lm.x > xMax) xMax = lm.x;
-      if (lm.y < yMin) yMin = lm.y;
-      if (lm.y > yMax) yMax = lm.y;
-    }
+    const nose = poseLMs[0];
     const pad = CONFIG.NOSE_PROXIMITY;
     const W = DOM.canvas.width, H = DOM.canvas.height;
+    
     ctx.save();
-    ctx.strokeStyle = STATE.B ? "rgba(0,255,136,0.7)" : "rgba(255,184,77,0.5)";
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([5, 4]);
-    ctx.strokeRect(
-      (xMin - pad) * W,
-      (yMin - pad) * H,
-      (xMax - xMin + pad * 2) * W,
-      (yMax - yMin + pad * 2) * H
-    );
+    ctx.strokeStyle = STATE.B ? "#10b981" : "rgba(245, 158, 11, 0.5)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    
+    // Draw proximity circle around nose
+    ctx.beginPath();
+    ctx.arc(nose.x * W, nose.y * H, pad * W, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    if (STATE.B) {
+      ctx.fillStyle = "rgba(16, 185, 129, 0.1)";
+      ctx.fill();
+    }
     ctx.restore();
   }
 }
@@ -606,31 +610,36 @@ function renderLandmarks(pR, hR, poseLMs) {
 // ═══════════════════════════════════════════════════════════
 
 function updateHUD() {
-  // Detect row
-  const dText = `pose:${STATE.poseDetected ? "✓" : "✗"} hands:${STATE.handsDetected}`;
-  setVal(DOM.hudDetect, dText, STATE.poseDetected && STATE.handsDetected > 0 ? "active" : "");
-
+  // Detect/Audio Cards
+  setVal(DOM.hudDetect, `pose:${STATE.poseDetected ? "✓" : "✗"} hands:${STATE.handsDetected}`, STATE.poseDetected && STATE.handsDetected > 0 ? "active" : "");
   setVal(DOM.hudAudio, STATE.audioStatus, STATE.audioStatus === "Ready" ? "ready" : "");
 
-  setVal(DOM.hudA, STATE.A ? "TRUE" : "FALSE", STATE.A ? "true" : "");
-  DOM.hudAd.textContent = `rev:${STATE.diagA.reversals} | win:${STATE.diagA.windowLen} | cont:${STATE.contA}/${CONFIG.CONTINUITY_NEEDED}`;
+  // Sub-A
+  setValSmall(DOM.hudA, STATE.A ? "TRUE" : "FALSE", STATE.A ? "true" : "");
+  DOM.hudAd.textContent = `rev:${STATE.diagA.reversals} | cont:${STATE.contA}/${CONFIG.CONTINUITY_NEEDED}`;
+  DOM.hudABar.style.width = `${Math.min(100, (STATE.contA / CONFIG.CONTINUITY_NEEDED) * 100)}%`;
 
-  setVal(DOM.hudB, STATE.B ? "TRUE" : "FALSE", STATE.B ? "true" : "");
+  // Sub-B
+  setValSmall(DOM.hudB, STATE.B ? "TRUE" : "FALSE", STATE.B ? "true" : "");
   const bd = STATE.diagB;
   DOM.hudBd.textContent = bd.dist != null
-    ? `dist:${bd.dist.toFixed(3)} ${bd.inside ? "✓IN" : ""} | cont:${STATE.contB}/${CONFIG.CONTINUITY_NEEDED}`
-    : `no landmarks | cont:${STATE.contB}/${CONFIG.CONTINUITY_NEEDED}`;
+    ? `dist:${bd.dist.toFixed(3)} | cont:${STATE.contB}/${CONFIG.CONTINUITY_NEEDED}`
+    : `no lms | cont:${STATE.contB}/${CONFIG.CONTINUITY_NEEDED}`;
+  DOM.hudBBar.style.width = `${Math.min(100, (STATE.contB / CONFIG.CONTINUITY_NEEDED) * 100)}%`;
 
-  setVal(DOM.hudC, STATE.C ? "TRUE" : "FALSE", STATE.C ? "true" : "");
+  // Sub-C
+  setValSmall(DOM.hudC, STATE.C ? "TRUE" : "FALSE", STATE.C ? "true" : "");
   DOM.hudCd.textContent = `auto(A≥${CONFIG.C_AUTO_FRAMES}): ${STATE.sustainedA}/${CONFIG.C_AUTO_FRAMES}`;
 
-  setVal(DOM.hudCooldown, STATE.cooldown ? "ACTIVE" : "INACTIVE", STATE.cooldown ? "cooldown" : "");
+  // Footer / Status
+  DOM.hudCooldown.textContent = STATE.cooldown ? "LOCKDOWN" : "READY";
+  DOM.hudCooldown.className = "hud-cooldown-text" + (STATE.cooldown ? " cooldown" : "");
 
   if (STATE.cooldown) {
-    DOM.hudTrigger.textContent = "FIRED 🔥";
+    DOM.hudTrigger.textContent = "FIRED";
     DOM.hudTrigger.className = "hud-value hud-trigger fired";
   } else if (STATE.A && STATE.B && STATE.C) {
-    DOM.hudTrigger.textContent = "PRIMED ✅";
+    DOM.hudTrigger.textContent = "PRIMED";
     DOM.hudTrigger.className = "hud-value hud-trigger true";
   } else {
     DOM.hudTrigger.textContent = "IDLE";
@@ -644,6 +653,11 @@ function updateHUD() {
 function setVal(el, text, cls) {
   el.textContent = text;
   el.className = "hud-value" + (cls ? ` ${cls}` : "");
+}
+
+function setValSmall(el, text, cls) {
+  el.textContent = text;
+  el.className = "hud-value-small" + (cls ? ` ${cls}` : "");
 }
 
 // ═══════════════════════════════════════════════════════════

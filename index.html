@@ -17,7 +17,7 @@
        ═══════════════════════════════════════════════════════ -->
   <div id="splash-screen">
     <div class="splash-content">
-      <div class="splash-icon">🤿🐦</div>
+      <div class="splash-icon"></div>
       <h1 class="splash-title">SCUBA BIRD</h1>
       <p class="splash-subtitle">PROTOCOL ENGINE v2.0</p>
       <div class="splash-status" id="splash-status">Awaiting initialization…</div>
@@ -63,73 +63,78 @@
       🎥 Switch Cam
     </button>
 
-    <!-- Video + Canvas Stack -->
-    <div class="video-container" id="video-container">
-      <video id="webcam" autoplay playsinline muted></video>
-      <canvas id="overlay-canvas"></canvas>
+    <div class="app-layout">
+      <!-- Video + Canvas Stack -->
+      <div class="video-container" id="video-container">
+        <video id="webcam" autoplay playsinline muted></video>
+        <canvas id="overlay-canvas"></canvas>
 
-      <!-- GIF Overlay (hidden until triggered) -->
-      <div id="gif-overlay" class="gif-overlay hidden">
-        <img id="gif-image" src="src/scuba.gif" alt="Scuba Bird GIF">
+        <!-- GIF Overlay (hidden until triggered) -->
+        <div id="gif-overlay" class="gif-overlay hidden">
+          <img id="gif-image" src="src/scuba.gif" alt="Scuba Bird GIF">
+        </div>
+
+        <!-- Cooldown bar -->
+        <div id="cooldown-bar" class="cooldown-bar hidden">
+          <div class="cooldown-fill" id="cooldown-fill"></div>
+        </div>
       </div>
 
-      <!-- Cooldown bar -->
-      <div id="cooldown-bar" class="cooldown-bar hidden">
-        <div class="cooldown-fill" id="cooldown-fill"></div>
-      </div>
-    </div>
+      <!-- ═══════════════════════════════════════════════════════
+           DIAGNOSTIC HUD (Dev Panel)
+           ═══════════════════════════════════════════════════════ -->
+      <div id="hud" class="hud">
+        <div class="hud-header">
+          <div class="hud-title">STATE ENGINE</div>
+          <div class="hud-version">PRO v2.5</div>
+        </div>
 
-    <!-- Audio Element (preloaded, not visible) -->
-    <audio id="audio-player" preload="auto" src="src/music/lagu_kicau_mania.mp3"></audio>
+        <div class="hud-grid">
+          <div class="hud-card">
+            <div class="hud-label">LANDMARKS</div>
+            <div class="hud-value" id="hud-detect">—</div>
+          </div>
+          <div class="hud-card">
+            <div class="hud-label">AUDIO</div>
+            <div class="hud-value" id="hud-audio">WAIT</div>
+          </div>
+        </div>
 
-    <!-- ═══════════════════════════════════════════════════════
-         DIAGNOSTIC HUD (Dev Panel)
-         ═══════════════════════════════════════════════════════ -->
-    <div id="hud" class="hud">
-      <div class="hud-title">STATE ENGINE</div>
+        <div class="hud-spacer"></div>
 
-      <div class="hud-section">
-        <div class="hud-label">LANDMARKS</div>
-        <div class="hud-value" id="hud-detect">—</div>
-      </div>
-      <div class="hud-section">
-        <div class="hud-label">AUDIO_SYS</div>
-        <div class="hud-value" id="hud-audio">UNINITIALIZED</div>
-      </div>
+        <div class="hud-section">
+          <div class="hud-label-main">SUB_A: R-Hand Wave</div>
+          <div class="hud-indicator-bar"><div id="hud-a-bar" class="hud-bar"></div></div>
+          <div class="hud-value-small" id="hud-a">FALSE</div>
+          <div class="hud-detail" id="hud-a-detail">rev: 0 | cont: 0/15</div>
+        </div>
 
-      <div class="hud-divider"></div>
+        <div class="hud-section">
+          <div class="hud-label-main">SUB_B: L-Hand → Nose</div>
+          <div class="hud-indicator-bar"><div id="hud-b-bar" class="hud-bar"></div></div>
+          <div class="hud-value-small" id="hud-b">FALSE</div>
+          <div class="hud-detail" id="hud-b-detail">dist: — | cont: 0/15</div>
+        </div>
 
-      <div class="hud-section">
-        <div class="hud-label">SUB_A: R-Hand Wave</div>
-        <div class="hud-value" id="hud-a">FALSE</div>
-        <div class="hud-detail" id="hud-a-detail">rev: 0 | cont: 0/15</div>
-      </div>
-      <div class="hud-section">
-        <div class="hud-label">SUB_B: L-Hand → Face</div>
-        <div class="hud-value" id="hud-b">FALSE</div>
-        <div class="hud-detail" id="hud-b-detail">dist: — | cont: 0/15</div>
-      </div>
-      <div class="hud-section">
-        <div class="hud-label">SUB_C: Torso Sway</div>
-        <div class="hud-value" id="hud-c">FALSE</div>
-        <div class="hud-detail" id="hud-c-detail">auto from A</div>
-      </div>
+        <div class="hud-section">
+          <div class="hud-label-main">SUB_C: Body Sway</div>
+          <div class="hud-value-small" id="hud-c">FALSE</div>
+          <div class="hud-detail" id="hud-c-detail">Sync via A</div>
+        </div>
 
-      <div class="hud-divider"></div>
+        <div class="hud-spacer"></div>
 
-      <div class="hud-section">
-        <div class="hud-label">COOLDOWN</div>
-        <div class="hud-value" id="hud-cooldown">INACTIVE</div>
-      </div>
-      <div class="hud-section">
-        <div class="hud-label">TRIGGER</div>
-        <div class="hud-value hud-trigger" id="hud-trigger">IDLE</div>
-      </div>
-
-      <div class="hud-divider"></div>
-      <div class="hud-section">
-        <div class="hud-label">FPS</div>
-        <div class="hud-value" id="hud-fps">0</div>
+        <div class="hud-footer">
+          <div class="hud-card trigger-card">
+            <div class="hud-label">STATUS</div>
+            <div class="hud-value hud-trigger" id="hud-trigger">IDLE</div>
+            <div id="hud-cooldown" class="hud-cooldown-text">READY</div>
+          </div>
+          <div class="hud-card fps-card">
+            <div class="hud-label">FPS</div>
+            <div class="hud-value" id="hud-fps">0</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
